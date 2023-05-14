@@ -36,7 +36,7 @@ void BinarySearchTree::Node::output_node(const std::string &prefix, const Binary
     }
 
     // Вывод информации о ключе (или других полезных данный в узле)
-    //std::cout << "Key: " << node->keyValuePair.first << ", Value: " << node->keyValuePair.second << std::endl;
+    std::cout << "(" << node->keyValuePair.first << ", " << node->keyValuePair.second << ")" << std::endl;
 
     // Префиксы для потомков
     std::string childPrefix = prefix;
