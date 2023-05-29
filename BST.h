@@ -29,8 +29,6 @@ class BinarySearchTree {
 
         void erase(const Key &key);
 
-        void replace_node(Node *node);
-
         std::pair<Key, Value> keyValuePair;
         Node *parent = nullptr;
         Node *left = nullptr;
@@ -82,8 +80,6 @@ public:
         bool operator==(const Iterator &other) const;
 
         bool operator!=(const Iterator &other) const;
-
-        Iterator lowerBound(const Key& key);
 
     private:
         Node *_node;

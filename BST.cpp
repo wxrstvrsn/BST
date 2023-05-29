@@ -1,5 +1,5 @@
-//#include "BST.h"
-#include <vector>
+#include "BST.h"
+#include <stack>
 #include <iostream>
 
 
@@ -23,15 +23,34 @@ BinarySearchTree::Node::Node(const BinarySearchTree::Node &other) {
 }
 
 void BinarySearchTree::Node::output_node(const std::string &prefix, const BinarySearchTree::Node *node, bool isLeft) {
-    if (node != nullptr) {
-        std::cout << prefix;
-        std::cout << (isLeft ? "├──" : "└──");
-
-        std::cout << node->keyValuePair.first << std::endl;
-
-        output_node(prefix + (isLeft ? "│   " : "    "), node->left, node->right != nullptr);
-        output_node(prefix + (isLeft ? "│   " : "    "), node->right, false);
+    if (node == nullptr) {
+        return;
     }
+
+    std::cout << prefix;
+
+    if (isLeft) {
+        std::cout << "в”њв”Ђв”Ђ ";
+    } else {
+        std::cout << "в””в”Ђв”Ђ ";
+    }
+
+    // Р’С‹РІРѕРґ РёРЅС„РѕСЂРјР°С†РёРё Рѕ РєР»СЋС‡Рµ (РёР»Рё РґСЂСѓРіРёС… РїРѕР»РµР·РЅС‹С… РґР°РЅРЅС‹Р№ РІ СѓР·Р»Рµ)
+    std::cout << "(" << node->keyValuePair.first << ", " << node->keyValuePair.second << ")" << std::endl;
+
+    // РџСЂРµС„РёРєСЃС‹ РґР»СЏ РїРѕС‚РѕРјРєРѕРІ
+    std::string childPrefix = prefix;
+    if (isLeft) {
+        childPrefix += "в”‚   ";
+    } else {
+        childPrefix += "    ";
+    }
+
+    // Р РµРєСѓСЂСЃРёРІРЅС‹Р№ РІС‹РІРѕРґ Р»РµРІРѕРіРѕ РїРѕРґРґРµСЂРµРІР°
+    output_node(childPrefix, node->left, true);
+
+    // Р РµРєСѓСЂСЃРёРІРЅС‹Р№ РІС‹РІРѕРґ РїСЂР°РІРѕРіРѕ РїРѕРґРґРµСЂРµРІР°
+    output_node(childPrefix, node->right, false);
 }
 
 void BinarySearchTree::Node::insert(const Key &key, const Value &value) {
@@ -47,17 +66,19 @@ void BinarySearchTree::Node::insert(const Key &key, const Value &value) {
         } else {
             right->insert(key, value);
         }
-    } else if (value < keyValuePair.first) {
-        if (left == nullptr) {
-            left = new Node(key, value, this);
+    } else { // Р•СЃР»Рё РєР»СЋС‡Рё СЂР°РІРЅС‹
+        if (value < keyValuePair.second) {
+            if (left == nullptr) {
+                left = new Node(key, value, this);
+            } else {
+                left->insert(key, value);
+            }
         } else {
-            left->insert(key, value);
-        }
-    } else {
-        if (right == nullptr) {
-            right = new Node(key, value, this);
-        } else {
-            right->insert(key, value);
+            if (right == nullptr) {
+                right = new Node(key, value, this);
+            } else {
+                right->insert(key, value);
+            }
         }
     }
 }
@@ -73,6 +94,7 @@ void BinarySearchTree::Node::erase(const Key &key) {
         }
     } else {
         if (left == nullptr && right == nullptr) {
+            // Case 1: РЈРґР°Р»СЏРµРјС‹Р№ СѓР·РµР» - Р»РёСЃС‚РѕРІРѕР№ СѓР·РµР»
             if (parent != nullptr) {
                 if (parent->left == this) {
                     parent->left = nullptr;
@@ -82,6 +104,7 @@ void BinarySearchTree::Node::erase(const Key &key) {
             }
             delete this;
         } else if (left == nullptr) {
+            // Case 2: РЈРґР°Р»СЏРµРјС‹Р№ СѓР·РµР» РёРјРµРµС‚ С‚РѕР»СЊРєРѕ РїСЂР°РІРѕРіРѕ РїРѕС‚РѕРјРєР°
             if (parent != nullptr) {
                 if (parent->left == this) {
                     parent->left = right;
@@ -92,6 +115,7 @@ void BinarySearchTree::Node::erase(const Key &key) {
             right->parent = parent;
             delete this;
         } else if (right == nullptr) {
+            // Case 3: РЈРґР°Р»СЏРµРјС‹Р№ СѓР·РµР» РёРјРµРµС‚ С‚РѕР»СЊРєРѕ Р»РµРІРѕРіРѕ РїРѕС‚РѕРјРєР°
             if (parent != nullptr) {
                 if (parent->left == this) {
                     parent->left = left;
@@ -102,12 +126,14 @@ void BinarySearchTree::Node::erase(const Key &key) {
             left->parent = parent;
             delete this;
         } else {
-            Node *next = right;
-            while (next->left != nullptr) {
-                next = next->left;
+            // Case 4: РЈРґР°Р»СЏРµРјС‹Р№ СѓР·РµР» РёРјРµРµС‚ Рё Р»РµРІРѕРіРѕ, Рё РїСЂР°РІРѕРіРѕ РїРѕС‚РѕРјРєР°
+            // Р·Р°РјРµРЅР° СѓР·Р»Р° РїСЂРµРµРјРЅРёРєРѕРј
+            Node *successor = right;
+            while (successor->left != nullptr) {
+                successor = successor->left;
             }
-            keyValuePair = next->keyValuePair;
-            next->erase(next->keyValuePair.first);
+            keyValuePair = successor->keyValuePair;
+            successor->erase(successor->keyValuePair.first);
         }
     }
 }
@@ -128,9 +154,9 @@ BinarySearchTree::BinarySearchTree(const BinarySearchTree &other) {
 
 BinarySearchTree &BinarySearchTree::operator=(const BinarySearchTree &other) {
     if (this == &other) {
-        return *this;
+        return *this; // СЃР°РјРѕРїСЂРёСЃРІР°РёРІР°РЅРёРµ
     }
-    this->~BinarySearchTree();
+    this->~BinarySearchTree(); // С‚Рѕ Р¶Рµ СЃР°РјРѕРµ, С‡С‚Рѕ clear() РІ РІРµРєС‚РѕСЂРµ
     if (other._root == nullptr) {
         _root = nullptr;
     } else {
@@ -148,6 +174,7 @@ BinarySearchTree::BinarySearchTree(BinarySearchTree &&other) noexcept {
 }
 
 BinarySearchTree &BinarySearchTree::operator=(BinarySearchTree &&other) noexcept {
+    // РўРѕР¶ СЃР°РјРѕ, С‡С‚Рѕ РѕРїРµСЂР°С‚РѕСЂ, РЅРѕ РµСЃС‚СЊ С‡РµРє РЅР° СЃР°РјРѕРїСЂРёСЃРІ Рё clear() this'a
     if (this == &other) {
         return *this;
     }
@@ -161,16 +188,16 @@ BinarySearchTree &BinarySearchTree::operator=(BinarySearchTree &&other) noexcept
 
 BinarySearchTree::~BinarySearchTree() {
     if (_root != nullptr) {
-        std::vector<Node *> nodes;
-        nodes.push_back(_root);
+        std::stack<Node *> nodes;
+        nodes.push(_root);
         while (!nodes.empty()) {
-            Node *node = nodes.back();
-            nodes.pop_back();
+            Node *node = nodes.top();
+            nodes.pop();
             if (node->left != nullptr) {
-                nodes.push_back(node->left);
+                nodes.push(node->left);
             }
             if (node->right != nullptr) {
-                nodes.push_back(node->right);
+                nodes.push(node->right);
             }
             delete node;
         }
@@ -198,45 +225,65 @@ const std::pair<Key, Value> *BinarySearchTree::Iterator::operator->() const {
 }
 
 BinarySearchTree::Iterator BinarySearchTree::Iterator::operator++() {
-    if (_node->right != nullptr) {
-        _node = _node->right;
-        while (_node->left != nullptr) {
-            _node = _node->left;
+    // РџСЂРѕРІРµСЂСЏРµРј, С‡С‚Рѕ РёС‚РµСЂР°С‚РѕСЂ РЅРµ СѓРєР°Р·С‹РІР°РµС‚ РЅР° РєРѕРЅРµС† РґРµСЂРµРІР°
+    if (_node != nullptr) {
+        // Р•СЃР»Рё РµСЃС‚СЊ РїСЂР°РІС‹Р№ РїРѕС‚РѕРјРѕРє, РїРµСЂРµС…РѕРґРёРј Рє РЅРµРјСѓ
+        if (_node->right != nullptr) {
+            _node = _node->right;
+            // РџРµСЂРµС…РѕРґРёРј Рє РєСЂР°Р№РЅРµРјСѓ Р»РµРІРѕРјСѓ РїРѕС‚РѕРјРєСѓ РїСЂР°РІРѕРіРѕ РїРѕРґРґРµСЂРµРІР°
+            while (_node->left != nullptr) {
+                _node = _node->left;
+            }
+        } else {
+            // Р•СЃР»Рё РЅРµС‚ РїСЂР°РІРѕРіРѕ РїРѕС‚РѕРјРєР°, РїРѕРґРЅРёРјР°РµРјСЃСЏ РІРІРµСЂС… РїРѕ СЂРѕРґРёС‚РµР»СЊСЃРєРёРј СѓР·Р»Р°Рј,
+            // РїРѕРєР° РЅРµ РЅР°Р№РґРµРј РїРµСЂРІС‹Р№ СѓР·РµР», РІ РєРѕС‚РѕСЂРѕРј С‚РµРєСѓС‰РёР№ СѓР·РµР» СЏРІР»СЏРµС‚СЃСЏ Р»РµРІС‹Рј РїРѕС‚РѕРјРєРѕРј
+            Node *parent = _node->parent;
+            while (parent != nullptr && _node == parent->right) {
+                _node = parent;
+                parent = parent->parent;
+            }
+            // РЈСЃС‚Р°РЅР°РІР»РёРІР°РµРј С‚РµРєСѓС‰РёР№ СѓР·РµР» РІ РЅР°Р№РґРµРЅРЅС‹Р№ СЂРѕРґРёС‚РµР»СЊСЃРєРёР№ СѓР·РµР»
+            _node = parent;
         }
-    } else {
-        while (_node->parent != nullptr && _node->parent->right == _node) {
-            _node = _node->parent;
-        }
-        _node = _node->parent;
     }
+    // Р’РѕР·РІСЂР°С‰Р°РµРј РёР·РјРµРЅРµРЅРЅС‹Р№ РёС‚РµСЂР°С‚РѕСЂ
     return *this;
 }
 
+
 BinarySearchTree::Iterator BinarySearchTree::Iterator::operator++(int) {
-    Iterator tmp = *this;
+    Iterator temp = *this;
     ++(*this);
-    return tmp;
+    return temp;
 }
 
 BinarySearchTree::Iterator BinarySearchTree::Iterator::operator--() {
-    if (_node->left != nullptr) {
-        _node = _node->left;
-        while (_node->right != nullptr) {
-            _node = _node->right;
+    // РџСЂРѕРІРµСЂСЏРµРј, С‡С‚Рѕ РёС‚РµСЂР°С‚РѕСЂ РЅРµ СѓРєР°Р·С‹РІР°РµС‚ РЅР° РєРѕРЅРµС† РґРµСЂРµРІР°
+    if (_node != nullptr) {
+        if (_node->left != nullptr) {
+            // Р•СЃР»Рё Сѓ С‚РµРєСѓС‰РµРіРѕ СѓР·Р»Р° РµСЃС‚СЊ Р»РµРІС‹Р№ РїРѕРґСѓР·РµР», РїРµСЂРµРјРµС‰Р°РµРјСЃСЏ Рє СЃР°РјРѕРјСѓ РїСЂР°РІРѕРјСѓ СѓР·Р»Сѓ РІ РµРіРѕ РїРѕРґРґРµСЂРµРІРµ
+            _node = _node->left;
+            while (_node->right != nullptr) {
+                _node = _node->right;
+            }
+        } else {
+            // Р•СЃР»Рё Сѓ С‚РµРєСѓС‰РµРіРѕ СѓР·Р»Р° РЅРµС‚ Р»РµРІРѕРіРѕ РїРѕРґСѓР·Р»Р°, РїРµСЂРµРјРµС‰Р°РµРјСЃСЏ РІРІРµСЂС… РїРѕ РґРµСЂРµРІСѓ
+            // РґРѕ РїРµСЂРІРѕРіРѕ СѓР·Р»Р°, РєРѕС‚РѕСЂС‹Р№ СЏРІР»СЏРµС‚СЃСЏ РїСЂР°РІС‹Рј РїРѕС‚РѕРјРєРѕРј СЃРІРѕРµРіРѕ СЂРѕРґРёС‚РµР»СЏ
+            while (_node->parent != nullptr && _node->parent->right != _node) {
+                _node = _node->parent;
+            }
+            _node = _node->parent; // РџРµСЂРµРјРµС‰Р°РµРјСЃСЏ Рє РЅР°Р№РґРµРЅРЅРѕРјСѓ СѓР·Р»Сѓ РёР»Рё РЅСѓР»РµРІРѕРјСѓ СѓР·Р»Сѓ, РµСЃР»Рё РґРѕСЃС‚РёРіР»Рё РєРѕСЂРЅСЏ
         }
-    } else {
-        while (_node->parent != nullptr && _node->parent->left == _node) {
-            _node = _node->parent;
-        }
-        _node = _node->parent;
     }
+
     return *this;
 }
 
+
 BinarySearchTree::Iterator BinarySearchTree::Iterator::operator--(int) {
-    Iterator tmp = *this;
+    Iterator temp = *this;
     --(*this);
-    return tmp;
+    return temp;
 }
 
 bool BinarySearchTree::Iterator::operator==(const BinarySearchTree::Iterator &other) const {
@@ -244,7 +291,7 @@ bool BinarySearchTree::Iterator::operator==(const BinarySearchTree::Iterator &ot
 }
 
 bool BinarySearchTree::Iterator::operator!=(const BinarySearchTree::Iterator &other) const {
-    return !(*this == other);
+    return _node != other._node;
 }
 
 
@@ -261,17 +308,28 @@ const std::pair<Key, Value> *BinarySearchTree::ConstIterator::operator->() const
 }
 
 BinarySearchTree::ConstIterator BinarySearchTree::ConstIterator::operator++() {
-    if (_node->right != nullptr) {
-        _node = _node->right;
-        while (_node->left != nullptr) {
-            _node = _node->left;
+    // РџСЂРѕРІРµСЂСЏРµРј, С‡С‚Рѕ РёС‚РµСЂР°С‚РѕСЂ РЅРµ СѓРєР°Р·С‹РІР°РµС‚ РЅР° РєРѕРЅРµС† РґРµСЂРµРІР°
+    if (_node != nullptr) {
+        // Р•СЃР»Рё РµСЃС‚СЊ РїСЂР°РІС‹Р№ РїРѕС‚РѕРјРѕРє, РїРµСЂРµС…РѕРґРёРј Рє РЅРµРјСѓ
+        if (_node->right != nullptr) {
+            _node = _node->right;
+            // РџРµСЂРµС…РѕРґРёРј Рє РєСЂР°Р№РЅРµРјСѓ Р»РµРІРѕРјСѓ РїРѕС‚РѕРјРєСѓ РїСЂР°РІРѕРіРѕ РїРѕРґРґРµСЂРµРІР°
+            while (_node->left != nullptr) {
+                _node = _node->left;
+            }
+        } else {
+            // Р•СЃР»Рё РЅРµС‚ РїСЂР°РІРѕРіРѕ РїРѕС‚РѕРјРєР°, РїРѕРґРЅРёРјР°РµРјСЃСЏ РІРІРµСЂС… РїРѕ СЂРѕРґРёС‚РµР»СЊСЃРєРёРј СѓР·Р»Р°Рј,
+            // РїРѕРєР° РЅРµ РЅР°Р№РґРµРј РїРµСЂРІС‹Р№ СѓР·РµР», РІ РєРѕС‚РѕСЂРѕРј С‚РµРєСѓС‰РёР№ СѓР·РµР» СЏРІР»СЏРµС‚СЃСЏ Р»РµРІС‹Рј РїРѕС‚РѕРјРєРѕРј
+            Node *parent = _node->parent;
+            while (parent != nullptr && _node == parent->right) {
+                _node = parent;
+                parent = parent->parent;
+            }
+            // РЈСЃС‚Р°РЅР°РІР»РёРІР°РµРј С‚РµРєСѓС‰РёР№ СѓР·РµР» РІ РЅР°Р№РґРµРЅРЅС‹Р№ СЂРѕРґРёС‚РµР»СЊСЃРєРёР№ СѓР·РµР»
+            _node = parent;
         }
-    } else {
-        while (_node->parent != nullptr && _node->parent->right == _node) {
-            _node = _node->parent;
-        }
-        _node = _node->parent;
     }
+    // Р’РѕР·РІСЂР°С‰Р°РµРј РёР·РјРµРЅРµРЅРЅС‹Р№ РёС‚РµСЂР°С‚РѕСЂ
     return *this;
 }
 
@@ -282,17 +340,24 @@ BinarySearchTree::ConstIterator BinarySearchTree::ConstIterator::operator++(int)
 }
 
 BinarySearchTree::ConstIterator BinarySearchTree::ConstIterator::operator--() {
-    if (_node->left != nullptr) {
-        _node = _node->left;
-        while (_node->right != nullptr) {
-            _node = _node->right;
+    // РџСЂРѕРІРµСЂСЏРµРј, С‡С‚Рѕ РёС‚РµСЂР°С‚РѕСЂ РЅРµ СѓРєР°Р·С‹РІР°РµС‚ РЅР° РєРѕРЅРµС† РґРµСЂРµРІР°
+    if (_node != nullptr) {
+        if (_node->left != nullptr) {
+            // Р•СЃР»Рё Сѓ С‚РµРєСѓС‰РµРіРѕ СѓР·Р»Р° РµСЃС‚СЊ Р»РµРІС‹Р№ РїРѕРґСѓР·РµР», РїРµСЂРµРјРµС‰Р°РµРјСЃСЏ Рє СЃР°РјРѕРјСѓ РїСЂР°РІРѕРјСѓ СѓР·Р»Сѓ РІ РµРіРѕ РїРѕРґРґРµСЂРµРІРµ
+            _node = _node->left;
+            while (_node->right != nullptr) {
+                _node = _node->right;
+            }
+        } else {
+            // Р•СЃР»Рё Сѓ С‚РµРєСѓС‰РµРіРѕ СѓР·Р»Р° РЅРµС‚ Р»РµРІРѕРіРѕ РїРѕРґСѓР·Р»Р°, РїРµСЂРµРјРµС‰Р°РµРјСЃСЏ РІРІРµСЂС… РїРѕ РґРµСЂРµРІСѓ
+            // РґРѕ РїРµСЂРІРѕРіРѕ СѓР·Р»Р°, РєРѕС‚РѕСЂС‹Р№ СЏРІР»СЏРµС‚СЃСЏ РїСЂР°РІС‹Рј РїРѕС‚РѕРјРєРѕРј СЃРІРѕРµРіРѕ СЂРѕРґРёС‚РµР»СЏ
+            while (_node->parent != nullptr && _node->parent->right != _node) {
+                _node = _node->parent;
+            }
+            _node = _node->parent; // РџРµСЂРµРјРµС‰Р°РµРјСЃСЏ Рє РЅР°Р№РґРµРЅРЅРѕРјСѓ СѓР·Р»Сѓ РёР»Рё РЅСѓР»РµРІРѕРјСѓ СѓР·Р»Сѓ, РµСЃР»Рё РґРѕСЃС‚РёРіР»Рё РєРѕСЂРЅСЏ
         }
-    } else {
-        while (_node->parent != nullptr && _node->parent->left == _node) {
-            _node = _node->parent;
-        }
-        _node = _node->parent;
     }
+
     return *this;
 }
 
@@ -307,7 +372,7 @@ bool BinarySearchTree::ConstIterator::operator==(const BinarySearchTree::ConstIt
 }
 
 bool BinarySearchTree::ConstIterator::operator!=(const BinarySearchTree::ConstIterator &other) const {
-    return !(*this == other);
+    return _node != other._node;
 }
 
 void BinarySearchTree::insert(const Key &key, const Value &value) {
@@ -319,7 +384,6 @@ void BinarySearchTree::insert(const Key &key, const Value &value) {
     }
 
 }
-
 
 void BinarySearchTree::erase(const Key &key) {
     Iterator it = this->find(key);
@@ -345,6 +409,7 @@ void BinarySearchTree::erase(const Key &key) {
         it = this->find(key);
     }
 }
+
 
 BinarySearchTree::Iterator BinarySearchTree::find(const Key &key) {
     Node *node = _root;
@@ -430,34 +495,29 @@ BinarySearchTree::equalRange(const Key &key) const {
 }
 
 BinarySearchTree::ConstIterator BinarySearchTree::min(const Key &key) const {
-    ConstIterator it = find(key);
-    if (it == cbegin()) {
-        return it;
+    Node *current = _root;
+
+    // РџРµСЂРµР№С‚Рё Рє СЃР°РјРѕРјСѓ Р»РµРІРѕРјСѓ РїРѕС‚РѕРјРєСѓ
+    while (current != nullptr && current->left != nullptr) {
+        current = current->left;
     }
-    ConstIterator it_tmp = it;
-    it_tmp--;
-    ConstIterator begin_it = cbegin();
-    while (it_tmp->first == key && it_tmp != begin_it) {
-        it--;
-        it_tmp--;
-    }
-    return it;
+
+    // Р’РµСЂРЅСѓС‚СЊ РёС‚РµСЂР°С‚РѕСЂ РЅР° С‚РµРєСѓС‰РёР№ СѓР·РµР»
+    return ConstIterator(current);
 }
 
 BinarySearchTree::ConstIterator BinarySearchTree::max(const Key &key) const {
-    ConstIterator it = find(key);
-    if (it == cend()) {
-        return it;
+    Node *current = _root;
+
+    // РџРµСЂРµР№С‚Рё Рє СЃР°РјРѕРјСѓ РїСЂР°РІРѕРјСѓ РїРѕС‚РѕРјРєСѓ
+    while (current != nullptr && current->right != nullptr) {
+        current = current->right;
     }
-    ConstIterator it_tmp = it;
-    it_tmp++;
-    ConstIterator end_it = cend();
-    while (it_tmp->first == key && it_tmp != end_it) {
-        it++;
-        it_tmp++;
-    }
-    return it;
+
+    // Р’РµСЂРЅСѓС‚СЊ РёС‚РµСЂР°С‚РѕСЂ РЅР° С‚РµРєСѓС‰РёР№ СѓР·РµР»
+    return ConstIterator(current);
 }
+
 
 BinarySearchTree::Iterator BinarySearchTree::begin() {
     Node *node = _root;
